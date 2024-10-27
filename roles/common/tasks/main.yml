@@ -1,0 +1,8 @@
+---
+- name: Update dnf packages
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    update_only: true
+  tags:
+    - update

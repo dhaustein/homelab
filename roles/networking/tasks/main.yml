@@ -1,0 +1,8 @@
+---
+- name: Set a hostname
+  ansible.builtin.hostname:
+    name: server
+    use: systemd
+  become: true
+  tags:
+    - hostname

@@ -1,0 +1,17 @@
+---
+- name: Setup homelab
+  hosts:
+    - server
+
+  tasks:
+    - name: Install packages
+      ansible.builtin.include_role:
+        name: common
+      tags:
+        - packages
+
+    - name: Setup networking
+      ansible.builtin.include_role:
+        name: networking
+      tags:
+        - networking
