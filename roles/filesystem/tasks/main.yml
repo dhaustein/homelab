@@ -1,0 +1,74 @@
+---
+- name: Hide grub menu when only one kernel available
+  ansible.builtin.command:
+    cmd: grub2-editenv - unset menu_auto_hide
+  become: true
+  register: hide_grub
+  changed_when: hide_grub.rc != 0
+  tags:
+    - grub
+    - grub_hide
+
+- name: Label the main btrfs volume
+  ansible.builtin.command:
+    cmd: btrfs filesystem label / main
+  become: true
+  register: label_out
+  changed_when: label_out.rc != 0
+  tags:
+    - btrfs
+    - btrfs_main_label
+
+- name: Get btrfs info
+  community.general.btrfs_info:
+  register: btrfs_info_out
+  become: true
+  tags:
+    - btrfs
+    - btrfs_info
+    - btrfs_podman_subvolume
+
+- name: Create btrfs subvolume for podman volumes in ansible user home
+  community.general.btrfs_subvolume:
+    name: "/home/{{ ansible_user }}/podman_volumes"
+    filesystem_label: main
+  become: true
+  tags:
+    - btrfs
+    - btrfs_podman_subvolume
+
+- name: Change subvolume ownership to ansible user
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/podman_volumes"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 'u=rwx,g=rx,o=rx'
+  become: true
+  tags:
+    - btrfs
+    - btrfs_podman_subvolume
+
+- name: Add the subvolume to fstab
+  ansible.posix.mount:
+    src: "UUID={{ btrfs_info_out.filesystems[0].uuid }}"
+    path: "/home/{{ ansible_user }}/podman_volumes"
+    opts: 'subvol=home/ansible/podman_volumes,compress=zstd:1'
+    state: present
+    fstype: btrfs
+    backup: true
+  become: true
+  notify:
+    - 'daemon-reload'
+  tags:
+    - btrfs
+    - btrfs_podman_subvolume
+
+- name: Restore selinux context on the mounted folder
+  ansible.builtin.command:
+    cmd: "restorecon -RF /home/{{ ansible_user }}/podman_volumes"
+  become: true
+  register: restore
+  changed_when: restore.rc != 0
+  tags:
+    - btrfs
+    - btrfs_podman_subvolume
