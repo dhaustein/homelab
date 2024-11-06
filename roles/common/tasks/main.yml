@@ -1,8 +1,43 @@
 ---
-- name: Update dnf packages
+- name: Configure dnf to be faster
+  ansible.builtin.lineinfile:
+    path: /etc/dnf/dnf.conf
+    line: "{{ item }}"
+    mode: 'u=rw,g=r,o=r'
+  become: true
+  loop:
+    - 'fastestmirror=True'
+    - 'max_parallel_downloads=10'
+  tags:
+    - dnf
+    - dnf_config
+
+# workaround for https://bugzilla.redhat.com/show_bug.cgi?id=2322751
+- name: Install missing python3-libdnf5 manually
+  ansible.builtin.command:
+    cmd: dnf install -y python3-libdnf5
+  become: true
+  register: out
+  changed_when: out.rc != 0
+  tags:
+    - dnf
+    - dnf_libdnf5_workaround
+
+- name: Update existing dnf packages and cache
   ansible.builtin.dnf:
     name: "*"
     state: latest
     update_only: true
+    update_cache: true
+  become: true
   tags:
-    - update
+    - dnf
+    - dnf_update
+
+- name: Install common packages
+  ansible.builtin.dnf:
+    name: "{{ common_packages }}"
+  become: true
+  tags:
+    - dnf
+    - dnf_install

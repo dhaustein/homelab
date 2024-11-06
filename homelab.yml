@@ -4,11 +4,17 @@
     - server
 
   tasks:
+    - name: Setup filesystem (btrfs)
+      ansible.builtin.include_role:
+        name: filesystem
+      tags:
+        - filesystem
+
     - name: Install packages
       ansible.builtin.include_role:
         name: common
       tags:
-        - packages
+        - common
 
     - name: Setup networking
       ansible.builtin.include_role:

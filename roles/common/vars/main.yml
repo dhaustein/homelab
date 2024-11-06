@@ -1,0 +1,7 @@
+common_packages:
+  - lm_sensors
+  - smartmontools
+  - btop
+  - cockpit-podman
+  - ripgrep
+  - pcp
