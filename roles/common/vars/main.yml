@@ -5,3 +5,4 @@ common_packages:
   - cockpit-podman
   - ripgrep
   - pcp
+  - python3-pcp
