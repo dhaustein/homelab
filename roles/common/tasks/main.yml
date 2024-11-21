@@ -23,10 +23,12 @@
     - dnf
     - dnf_libdnf5_workaround
 
-- name: Update existing dnf packages and cache
+# excluding kernel from updates so it must be updated manually with supervision
+- name: Update existing dnf packages and update cache
   ansible.builtin.dnf:
     name: "*"
     state: latest
+    exclude: "kernel*"
     update_only: true
     update_cache: true
   become: true
