@@ -4,6 +4,13 @@
     - server
 
   tasks:
+    - name: Validate sudo pass has been set as env var
+      ansible.builtin.assert:
+        that: lookup('ansible.builtin.env', 'ANSIBLE_BECOME_PASS') != ''
+        fail_msg: "Env var ANSIBLE_BECOME_PASS is empty, cannot continue!"
+      tags:
+        - always
+
     - name: Setup filesystem (btrfs)
       ansible.builtin.include_role:
         name: filesystem
