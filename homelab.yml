@@ -23,6 +23,8 @@
       tags:
         - common
 
+    # TODO add performance role
+
     - name: Setup networking
       ansible.builtin.include_role:
         name: networking
@@ -35,3 +37,6 @@
       tags:
         - containers
 
+    # TODO add maintenance role
+
+    # TODO add backup role
