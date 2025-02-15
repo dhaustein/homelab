@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+    <short>Media services</short>
+    <description>Firewalld service for all the media related containers</description>
+    <!-- sabnzbd -->
+    <port port="18080" protocol="tcp"/>
+    <!-- radarr -->
+    <port port="18989" protocol="tcp"/>
+    <!-- emby -->
+    <port port="18096" protocol="tcp"/>
+</service>

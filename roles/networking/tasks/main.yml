@@ -6,3 +6,27 @@
   become: true
   tags:
     - hostname
+
+- name: Open ports for media services
+  become: true
+  tags:
+    - media_services
+  block:
+    - name: Create media firewalld service
+      ansible.builtin.copy:
+        src: 'media.xml'
+        dest: '/etc/firewalld/services/media.xml'
+        mode: 'u=rw,g=r,o=r'
+
+    - name: Restart firewald service
+      ansible.builtin.systemd:
+        name: firewalld
+        state: restarted
+
+    - name: Enable media firewalld service
+      ansible.posix.firewalld:
+        zone: FedoraServer
+        service: media
+        state: enabled
+        immediate: true
+        permanent: true
