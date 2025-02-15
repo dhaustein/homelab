@@ -1,0 +1,25 @@
+[Unit]
+Description=sonarr podman container
+
+[Container]
+# https://hub.docker.com/r/linuxserver/sonarr
+Image=docker.io/linuxserver/sonarr:latest
+ContainerName=sonarr
+AutoUpdate=registry
+Pod=media.pod
+
+Volume=/mnt/podman/sonarr:/config:z
+
+Volume=/mnt/media/usenet/complete:/downloads:z
+Volume=/mnt/media/library:/library:z
+
+Environment=PUID=1001
+Environment=PGID=1001
+Environment=TZ=Europe/Prague
+
+[Service]
+Restart=no
+ExecStartPost=podman exec sonarr /bin/sh -c 'chown -R 1001:1001 /library'
+
+[Install]
+WantedBy=default.target

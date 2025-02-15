@@ -1,0 +1,6 @@
+containers_ansible_user_home: "/home/{{ ansible_user }}"
+containers_ansible_user_dir: "{{ containers_ansible_user_home }}/.config/containers"
+containers_graphroot: '/mnt/podman/containers/graphroot_storage'
+containers_runroot: '/mnt/podman/containers/runroot_storage'
+containers_rootless_storage: '/mnt/podman/containers/graphroot_rootless_storage'
+containers_services_dir: "{{ containers_ansible_user_home }}/.config/containers/systemd"

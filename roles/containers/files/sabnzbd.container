@@ -1,0 +1,24 @@
+[Unit]
+Description=sabnzbd podman container
+
+[Container]
+# https://hub.docker.com/r/linuxserver/sabnzbd
+Image=docker.io/linuxserver/sabnzbd:latest
+ContainerName=sabnzbd
+AutoUpdate=registry
+Pod=media.pod
+
+Volume=/mnt/podman/sabnzbd:/config:z
+
+Volume=/mnt/media/usenet/incomplete:/incomplete-downloads:z
+Volume=/mnt/media/usenet/complete:/downloads:z
+
+Environment=PUID=1001
+Environment=PGID=1001
+Environment=TZ=Europe/Prague
+
+[Service]
+Restart=no
+
+[Install]
+WantedBy=default.target

@@ -28,3 +28,10 @@
         name: networking
       tags:
         - networking
+
+    - name: Setup containers
+      ansible.builtin.include_role:
+        name: containers
+      tags:
+        - containers
+

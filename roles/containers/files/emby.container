@@ -1,0 +1,27 @@
+[Unit]
+Description=emby podman container
+
+[Container]
+# https://hub.docker.com/r/linuxserver/emby
+Image=docker.io/linuxserver/emby:latest
+ContainerName=emby
+AutoUpdate=registry
+Pod=media.pod
+
+Volume=/mnt/podman/emby:/config:z
+
+Volume=/mnt/media/library:/library:z
+
+Environment=PUID=1001
+Environment=PGID=1001
+Environment=TZ=Europe/Prague
+
+# share the intel gpu for transcoding
+AddDevice=/dev/dri
+
+[Service]
+Restart=no
+ExecStartPost=podman exec sonarr /bin/sh -c 'chown -R 1001:1001 /library'
+
+[Install]
+WantedBy=default.target

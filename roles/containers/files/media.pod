@@ -1,0 +1,8 @@
+[Pod]
+PodName=media
+# sabnzbd
+PublishPort=18080:8080
+# radarr
+PublishPort=18989:8989
+# emby
+PublishPort=18096:8096

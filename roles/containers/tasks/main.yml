@@ -1,0 +1,118 @@
+---
+- name: Configure Podman
+  become: true
+  tags:
+    - containers_config
+  block:
+    - name: Create Podman configuration folder in home dir of {{ ansible_user }}
+      ansible.builtin.file:
+        path: "{{ containers_ansible_user_dir }}"
+        state: directory
+        mode: 'u=rwx,g=rx,o=rx'
+
+    - name: Place Podman configuration files for user {{ ansible_user }}
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ containers_ansible_user_dir }}/{{ item }}"
+        mode: 'u=rwx,g=rx,o=rx'
+      loop:
+        - containers.conf
+        - registries.conf
+        - storage.conf
+
+    - name: Ensure lingering enabled for systemd user units
+      ansible.builtin.command:
+        cmd: "loginctl enable-linger {{ ansible_user }}"
+        creates: "/var/lib/systemd/linger/{{ ansible_user }}"
+
+    - name: Create new Podman storage dirs under the btrfs sub-volume
+      ansible.builtin.file:
+        state: directory
+        path: "{{ item.path }}"
+        owner: "{{ item.user }}"
+        group: "{{ item.group }}"
+        mode: 'u=rwx,g=rwx,o=rx'
+      loop:
+        - { path: "{{ containers_graphroot }}", user: "root", group: "root" }
+        - { path: "{{ containers_runroot }}", user: "root", group: "root" }
+        - { path: "{{ containers_rootless_storage }}", user: "{{ ansible_user }}", group: "{{ ansible_user }}" }
+
+    - name: Copy SELinux labels onto the new Podman storage dirs
+      ansible.builtin.command:
+        cmd: "semanage fcontext -a -e {{ item.old }} {{ item.new }}"
+      register: semanage
+      changed_when: semanage.rc != 0
+      loop:
+        - { old: "/var/lib/containers/storage", new: "{{ containers_graphroot }}" }
+        - { old: "/run/containers/storage", new: "{{ containers_runroot }}" }
+
+    - name: Re-apply SELinux context on the new Podman storage dirs
+      ansible.builtin.command:
+        cmd: "restorecon -RF {{ item }}"
+      register: restore
+      changed_when: restore.rc != 0
+      loop:
+        - "{{ containers_graphroot }}"
+        - "{{ containers_rootless_storage }}"
+        - "{{ containers_runroot }}"
+
+    - name: Create user systemd dir for {{ ansible_user }}
+      ansible.builtin.file:
+        state: directory
+        # /home/ansible/.config/systemd/user
+        path: "{{ containers_services_dir }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: 'u=rwx,g=rx,o=rx'
+
+- name: Deploy media services
+  tags:
+    - containers_media
+  block:
+    - name: Install media pod
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ containers_services_dir }}/{{ item }}"
+        mode: 'u=rwx,g=rx,o=rx'
+      loop:
+        - 'media.pod'
+
+    - name: Prepare media volumes
+      ansible.builtin.file:
+        state: directory
+        path: "{{ item }}"
+        mode: 'u=rwx,g=rx,o=rx'
+      # TODO move the list to vars
+      loop:
+        - /mnt/podman/sabnzbd
+        - /mnt/podman/sonarr
+        - /mnt/podman/emby
+        - /mnt/media/usenet/incomplete
+        - /mnt/media/usenet/complete
+        - /mnt/media/library/books
+        - /mnt/media/library/movies
+        - /mnt/media/library/music
+        - /mnt/media/library/tv
+        - /mnt/media/library/sw
+
+    - name: Install media services
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ containers_services_dir }}/{{ item }}"
+        mode: 'u=rwx,g=rx,o=rx'
+      loop:
+        - 'sabnzbd.container'
+        - 'sonarr.container'
+        - 'emby.container'
+
+    - name: Enable and start media service
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+        daemon_reload: true
+        scope: user
+      loop:
+        - 'sabnzbd.service'
+        - 'sonarr.service'
+        - 'emby.service'
