@@ -7,7 +7,7 @@
     - name: Validate sudo pass has been set as env var
       ansible.builtin.assert:
         that: lookup('ansible.builtin.env', 'ANSIBLE_BECOME_PASS') != ''
-        fail_msg: "Env var ANSIBLE_BECOME_PASS is empty, cannot continue!"
+        fail_msg: "Env var ANSIBLE_BECOME_PASS is not set, cannot continue!"
       tags:
         - always
 
