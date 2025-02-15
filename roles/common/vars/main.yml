@@ -6,3 +6,4 @@ common_packages:
   - ripgrep
   - pcp
   - python3-pcp
+  - igt-gpu-tools
