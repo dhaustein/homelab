@@ -32,7 +32,7 @@
 - name: Save btrfs info as vars
   ansible.builtin.set_fact:
     podman_subvolume: "{{ btrfs_info_out | community.general.json_query('filesystems[?label==main].subvolumes[].path[] | [?contains(@, podman)]') }}"
-    media_subvolume: "{{ btrfs_info_out | community.general.json_query('filesystems[?label==media]') }}"  # FIXME
+    media_subvolume: "{{ btrfs_info_out | community.general.json_query('filesystems[?label==media]') }}"
   tags:
     - btrfs
     - btrfs_info
@@ -54,6 +54,7 @@
 
 - name: Btrfs subvolume for podman
   become: true
+  # don't run if the podman subvolume already exists and is mounted
   when:
     - not podman_subvolume
     - filesystem_podman_mount_dir not in existing_mountpoints.stdout
@@ -65,8 +66,6 @@
       ansible.builtin.file:
         state: directory
         path: "{{ filesystem_podman_mount_dir }}"
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
         mode: 'u=rwx,g=rx,o=rx'
 
     - name: Create btrfs subvolume for podman named "{{ filesystem_podman_subvolume }}"
@@ -92,10 +91,19 @@
       register: restore
       changed_when: restore.rc != 0
 
-# ----- Btrfs media mirror across two big storage drive ----- #
+    - name: Ensure mounted podman dir is owned by the ansible user
+      ansible.builtin.file:
+        state: directory
+        path: "{{ filesystem_podman_mount_dir }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: 'u=rwx,g=rx,o=rx'
+
+# ----- Btrfs media mirror across two bigger storage drives ----- #
 
 - name: Btrfs subvolume for media
   become: true
+  # don't run if the media subvolume already exists and is mounted
   when:
     - not media_subvolume
     - filesystem_media_mount_dir not in existing_mountpoints.stdout
@@ -107,8 +115,6 @@
       ansible.builtin.file:
         state: directory
         path: "{{ filesystem_media_mount_dir }}"
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
         mode: 'u=rwx,g=rx,o=rx'
 
     - name: Create a btrfs partition on each of the large nvme drives
@@ -119,8 +125,6 @@
         fs_type: btrfs
         part_start: 4MiB
         part_end: 100%
-        label: gpt
-        name: "{{ item.disk_label }}"
       loop:
         - { disk_id: "{{ filesystem_media_drive_id_one }}", disk_label: 'media_one'}
         - { disk_id: "{{ filesystem_media_drive_id_two }}", disk_label: 'media_two'}
@@ -141,8 +145,6 @@
       ansible.builtin.file:
         state: directory
         path: /mnt/tmp_media
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
         mode: 'u=rwx,g=rx,o=rx'
 
     - name: Temporarily mount the new filesystem
@@ -183,8 +185,15 @@
         state: unmounted
         fstype: btrfs
 
-    - name: Remove the temporary mount folder
+    - name: Remove the temporary mount
       ansible.builtin.file:
         state: absent
         path: /mnt/tmp_media
 
+    - name: Ensure mounted dir is owned by the ansible user
+      ansible.builtin.file:
+        state: directory
+        path: "{{ filesystem_media_mount_dir }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: 'u=rwx,g=rx,o=rx'
