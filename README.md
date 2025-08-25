@@ -1,14 +1,14 @@
 # Setup
 
+__Requirements:__ `uv` and `python` are installed
+
 1. Clone this repo
 
 2. Create a virtual environment and install dependencies
 
 ```
-$ python3 -m venv .venv
-$ source .venv/bin/activate
-$ pip install --upgrade pip setuptools
-$ pip install -r requirements.txt
+$ uv venv
+$ uv sync
 $ ansible-galaxy collection install community.general
 ```
 
@@ -20,7 +20,7 @@ Example of the SSH config:
 ```
 $ cat ~/.ssh/config
 Host server
-  HostName 192.168.xxx.xxx
+  HostName xxx.xxx.xxx.xxx
   User ansible
   Preferredauthentications publickey
   IdentityFile /home/<username>/.ssh/id_ed25519
@@ -35,6 +35,13 @@ export ANSIBLE_BECOME_PASS=<secret>
 ```
 _Tip: install and use `direnv` to not have to manually export the env var every time._
 
+```
+$ cat .envrc
+export ANSIBLE_BECOME_PASS=foo
+export VIRTUAL_ENV=.venv
+layout python3
+```
+
 6. Run the playbook
 
 Example on how to run the media containers roles only:
@@ -46,7 +53,7 @@ $ ansible-playbook -v --tags "containers,containers_media" homelab.yml
 
 ## General
 
-- consider switching to `uv` for package management
+- add Makefile for common tasks such as linting
 
 ## Maintenance role
 
