@@ -40,8 +40,8 @@
     - name: Copy SELinux labels onto the new Podman storage dirs
       ansible.builtin.command:
         cmd: "semanage fcontext -a -e {{ item.old }} {{ item.new }}"
-      register: semanage
-      changed_when: semanage.rc != 0
+      register: containers_semanage
+      changed_when: containers_semanage.rc != 0
       loop:
         - { old: "/var/lib/containers/storage", new: "{{ containers_graphroot }}" }
         - { old: "/run/containers/storage", new: "{{ containers_runroot }}" }
@@ -49,8 +49,8 @@
     - name: Re-apply SELinux context on the new Podman storage dirs
       ansible.builtin.command:
         cmd: "restorecon -RF {{ item }}"
-      register: restore
-      changed_when: restore.rc != 0
+      register: containers_restore
+      changed_when: containers_restore.rc != 0
       loop:
         - "{{ containers_graphroot }}"
         - "{{ containers_rootless_storage }}"

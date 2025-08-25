@@ -17,8 +17,8 @@
   ansible.builtin.command:
     cmd: dnf install -y python3-libdnf5
   become: true
-  register: out
-  changed_when: out.rc != 0
+  register: common_out
+  changed_when: common_out.rc != 0
   tags:
     - dnf
     - dnf_libdnf5_workaround

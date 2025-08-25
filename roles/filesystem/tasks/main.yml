@@ -3,8 +3,8 @@
   ansible.builtin.command:
     cmd: grub2-editenv - unset menu_auto_hide
   become: true
-  register: hide_grub
-  changed_when: hide_grub.rc != 0
+  register: filesystem_hide_grub
+  changed_when: filesystem_hide_grub.rc != 0
   tags:
     - grub
     - grub_hide
@@ -13,15 +13,15 @@
   ansible.builtin.command:
     cmd: btrfs filesystem label / main
   become: true
-  register: label_out
-  changed_when: label_out.rc != 0
+  register: filesystem_label_out
+  changed_when: filesystem_label_out.rc != 0
   tags:
     - btrfs
     - btrfs_main_label
 
 - name: Get btrfs info
   community.general.btrfs_info:
-  register: btrfs_info_out
+  register: filesystem_btrfs_info_out
   become: true
   tags:
     - btrfs
@@ -31,8 +31,12 @@
 
 - name: Save btrfs info as vars
   ansible.builtin.set_fact:
-    podman_subvolume: "{{ btrfs_info_out | community.general.json_query('filesystems[?label==main].subvolumes[].path[] | [?contains(@, podman)]') }}"
-    media_subvolume: "{{ btrfs_info_out | community.general.json_query('filesystems[?label==media]') }}"
+    filesystem_podman_subvolume: >-
+      {{ filesystem_btrfs_info_out |
+         community.general.json_query('filesystems[?label==main].subvolumes[].path[] | [?contains(@, podman)]') }}
+    filesystem_media_subvolume: >-
+      {{ filesystem_btrfs_info_out |
+         community.general.json_query('filesystems[?label==media]') }}
   tags:
     - btrfs
     - btrfs_info
@@ -42,8 +46,8 @@
 - name: Get info on all existing mountpoints
   ansible.builtin.command:
     cmd: lsblk --output mountpoints
-  register: existing_mountpoints
-  changed_when: existing_mountpoints.rc != 0
+  register: filesystem_existing_mountpoints
+  changed_when: filesystem_existing_mountpoints.rc != 0
   tags:
     - btrfs
     - btrfs_info
@@ -56,8 +60,8 @@
   become: true
   # don't run if the podman subvolume already exists and is mounted
   when:
-    - not podman_subvolume
-    - filesystem_podman_mount_dir not in existing_mountpoints.stdout
+    - not filesystem_podman_subvolume
+    - filesystem_podman_mount_dir not in filesystem_existing_mountpoints.stdout
   tags:
     - btrfs
     - btrfs_podman
@@ -72,11 +76,11 @@
       community.general.btrfs_subvolume:
         name: "{{ filesystem_podman_subvolume }}"
         filesystem_label: main
-      register: podman_subvol
+      register: filesystem_podman_subvol
 
     - name: Add the podman subvolume and dir to fstab
       ansible.posix.mount:
-        src: "UUID={{ podman_subvol.filesystem.uuid }}"
+        src: "UUID={{ filesystem_podman_subvol.filesystem.uuid }}"
         path: "{{ filesystem_podman_mount_dir }}"
         opts: subvol="{{ filesystem_podman_subvolume }}",compress=zstd:1,ssd,space_cache=v2,noatime,nodiscard
         state: mounted
@@ -88,8 +92,8 @@
     - name: Restore selinux context on the podman dir
       ansible.builtin.command:
         cmd: "restorecon -RF {{ filesystem_podman_mount_dir }}"
-      register: restore
-      changed_when: restore.rc != 0
+      register: filesystem_restore
+      changed_when: filesystem_restore.rc != 0
 
     - name: Ensure mounted podman dir is owned by the ansible user
       ansible.builtin.file:
@@ -105,8 +109,8 @@
   become: true
   # don't run if the media subvolume already exists and is mounted
   when:
-    - not media_subvolume
-    - filesystem_media_mount_dir not in existing_mountpoints.stdout
+    - not filesystem_media_subvolume
+    - filesystem_media_mount_dir not in filesystem_existing_mountpoints.stdout
   tags:
     - btrfs
     - btrfs_media
@@ -132,14 +136,14 @@
     - name: Create btrfs mirror across both large nvme drives
       ansible.builtin.command:
         cmd: mkfs.btrfs -f -L media --metadata RAID1 --data RAID1 "{{ filesystem_media_drive_id_one }}" "{{ filesystem_media_drive_id_two }}"
-      register: media_out
-      changed_when: media_out.rc != 0
+      register: filesystem_media_out
+      changed_when: filesystem_media_out.rc != 0
 
     - name: Re-scan btrfs devices after mirror creation
       ansible.builtin.command:
         cmd: btrfs device scan
-      register: btrfs_rescan_out
-      changed_when: btrfs_rescan_out.rc != 0
+      register: filesystem_btrfs_rescan_out
+      changed_when: filesystem_btrfs_rescan_out.rc != 0
 
     - name: Create temporary folder to mount the new filesystem
       ansible.builtin.file:
@@ -159,11 +163,11 @@
         name: "{{ filesystem_media_subvolume }}"
         filesystem_label: media
         default: true
-      register: media_subvol
+      register: filesystem_media_subvol
 
     - name: Add the media subvolume and mount to fstab permanently
       ansible.posix.mount:
-        src: "UUID={{ media_subvol.filesystem.uuid }}"
+        src: "UUID={{ filesystem_media_subvol.filesystem.uuid }}"
         path: "{{ filesystem_media_mount_dir }}"
         opts: subvol="{{ filesystem_media_subvolume }}",compress=zstd:1,ssd,space_cache=v2,noatime,nodiscard
         state: mounted
@@ -175,8 +179,8 @@
     - name: Restore selinux context on the media dir
       ansible.builtin.command:
         cmd: restorecon -RF "{{ filesystem_media_mount_dir }}"
-      register: restore
-      changed_when: restore.rc != 0
+      register: filesystem_restore_media
+      changed_when: filesystem_restore_media.rc != 0
 
     - name: Unmount the temporary mount
       ansible.posix.mount:
