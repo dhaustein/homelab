@@ -2,7 +2,7 @@
 name = "homelab-ansible"
 version = "0.1.0"
 description = "Ansible automation for my homelab"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "ansible>=10.0.0",
     "ansible-lint>=24.0.0",
@@ -24,7 +24,7 @@ dev-dependencies = [
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
@@ -57,7 +57,7 @@ ignore = [
     "SIM108",  # Use ternary operator instead of if-else
 ]
 
-# Additional useful configurations
+# extra configuration for tests
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
     "S101",    # Allow assert in tests
