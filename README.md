@@ -1,6 +1,20 @@
-# Setup
+# Quickstart
 
-__Requirements:__ `uv` and `python` are installed
+```
+$ make help
+Makefile for my Ansible Homelab project
+
+Usage:
+  make install      - Create virtual environment and install dependencies
+  make lint         - Run all linters (ansible-lint, ruff)
+  make lint-ansible - Run ansible-lint
+  make lint-python  - Run ruff linter
+  make format       - Run ruff formatter
+```
+
+# Manual setup
+
+__Requirements:__ `uv`, `make`, and `python3` are installed
 
 1. Clone this repo
 
